@@ -39,6 +39,24 @@ mod tests {
             self.w != 1.0
         }
 
+        fn magnitude(&self) -> f32 {
+            (
+                self.x.powi(2) +
+                self.y.powi(2) +
+                self.z.powi(2) +
+                self.w.powi(2)
+            ).sqrt()
+        }
+
+        fn normalize(&self) -> Tuple {
+            tuple(
+                self.x / self.magnitude(),
+                self.y / self.magnitude(),
+                self.z / self.magnitude(),
+                self.w / self.magnitude(),
+            )
+        }
+
     }
 
     impl core::ops::Add for Tuple {
@@ -214,5 +232,31 @@ mod tests {
         let a = tuple(1.0, -2.0, 3.0, -4.0);
 
         assert_eq!(a / 2.0, tuple(0.5, -1.0, 1.5, -2.0));
+    }
+
+    #[test]
+    fn vector_magnitudes() {
+        let v1 = vector(1.0, 0.0, 0.0);
+        let v2 = vector(0.0, 1.0, 0.0);
+        let v3 = vector(0.0, 0.0, 1.0);
+        let v4 = vector(1.0, 2.0, 3.0);
+        let v5 = vector(-1.0, -2.0, -3.0);
+
+        assert_eq!(v1.magnitude(), 1.0);
+        assert_eq!(v2.magnitude(), 1.0);
+        assert_eq!(v3.magnitude(), 1.0);
+        assert_eq!(v4.magnitude(), 14f32.sqrt());
+        assert_eq!(v5.magnitude(), 14f32.sqrt());
+    }
+
+    #[test]
+    fn vector_normalize() {
+        let v1 = vector(4.0, 0.0, 0.0);
+        let v2 = vector(1f32, 2f32, 3f32);
+        let norm = v2.normalize();
+
+        assert_eq!(v1.normalize(), vector(1f32, 0f32, 0f32));
+        assert_eq!(norm, vector(0.26726, 0.53452, 0.80178));
+        assert_eq!(norm.magnitude(), 1.0);
     }
 }
