@@ -57,6 +57,21 @@ mod tests {
             )
         }
 
+        fn dot(&self, other: Tuple) -> f32 {
+            self.x * other.x +
+                self.y * other.y +
+                self.z * other.z +
+                self.w * other.w
+        }
+
+        fn cross(&self, other: &Tuple) -> Tuple {
+            vector(
+                self.y * other.z - self.z * other.y,
+                self.z * other.x - self.x * other.z,
+                self.x * other.y - self.y * other.x
+            )
+        }
+
     }
 
     impl core::ops::Add for Tuple {
@@ -256,7 +271,25 @@ mod tests {
         let norm = v2.normalize();
 
         assert_eq!(v1.normalize(), vector(1f32, 0f32, 0f32));
-        assert_eq!(norm, vector(0.26726, 0.53452, 0.80178));
-        assert_eq!(norm.magnitude(), 1.0);
+        // XXX figure out how to write an assert +/- epsilon assertion
+        assert_eq!(norm, vector(0.26726124, 0.5345225, 0.8017837));
+        assert_eq!(norm.magnitude(), 0.99999994);
+    }
+
+    #[test]
+    fn dot_product() {
+        let a = vector(1.0, 2.0, 3.0);
+        let b = vector(2.0, 3.0, 4.0);
+
+        assert_eq!(a.dot(b), 20.0);
+    }
+    
+    #[test]
+    fn cross_product() {
+        let a = vector(1.0, 2.0, 3.0);
+        let b = vector(2.0, 3.0, 4.0);
+
+        assert_eq!(a.cross(&b), vector(-1.0, 2.0, -1.0));
+        assert_eq!(b.cross(&a), vector(1.0, -2.0, 1.0));
     }
 }
