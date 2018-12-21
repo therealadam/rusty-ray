@@ -1,20 +1,15 @@
-fn main() {
-    println!("Hello, world!");
-}
-
-#[cfg(test)]
-mod tests {
+mod ray {
     #[derive(PartialEq, Debug)]
-    struct Tuple {
-        x: f32,
-        y: f32,
-        z: f32,
-        w: f32,
+    pub struct Tuple {
+        pub x: f32,
+        pub y: f32,
+        pub z: f32,
+        pub w: f32,
     }
 
     impl Tuple {
 
-        fn tuple(x: f32, y: f32, z: f32, w: f32) -> Tuple {
+        pub fn tuple(x: f32, y: f32, z: f32, w: f32) -> Tuple {
             Tuple {
                 x: x,
                 y: y,
@@ -23,32 +18,32 @@ mod tests {
             }
         }
 
-        fn point(x: f32, y: f32, z: f32) -> Tuple {
+        pub fn point(x: f32, y: f32, z: f32) -> Tuple {
             Tuple::tuple(x, y, z, 1.0)
         }
 
-        fn vector(x: f32, y: f32, z: f32) -> Tuple {
+        pub fn vector(x: f32, y: f32, z: f32) -> Tuple {
             Tuple::tuple(x, y, z, 0.0)
         }
 
-        fn is_point(&self) -> bool {
+        pub fn is_point(&self) -> bool {
             self.w == 1.0
         }
 
-        fn is_vector(&self) -> bool {
+        pub fn is_vector(&self) -> bool {
             self.w != 1.0
         }
 
-        fn magnitude(&self) -> f32 {
+        pub fn magnitude(&self) -> f32 {
             (
                 self.x.powi(2) +
-                self.y.powi(2) +
-                self.z.powi(2) +
-                self.w.powi(2)
+                    self.y.powi(2) +
+                    self.z.powi(2) +
+                    self.w.powi(2)
             ).sqrt()
         }
 
-        fn normalize(&self) -> Tuple {
+        pub fn normalize(&self) -> Tuple {
             tuple(
                 self.x / self.magnitude(),
                 self.y / self.magnitude(),
@@ -57,14 +52,14 @@ mod tests {
             )
         }
 
-        fn dot(&self, other: Tuple) -> f32 {
+        pub fn dot(&self, other: Tuple) -> f32 {
             self.x * other.x +
                 self.y * other.y +
                 self.z * other.z +
                 self.w * other.w
         }
 
-        fn cross(&self, other: &Tuple) -> Tuple {
+        pub fn cross(&self, other: &Tuple) -> Tuple {
             vector(
                 self.y * other.z - self.z * other.y,
                 self.z * other.x - self.x * other.z,
@@ -136,17 +131,29 @@ mod tests {
         }
     }
 
-    fn tuple(x: f32, y: f32, z: f32, w: f32) -> Tuple {
+    pub fn tuple(x: f32, y: f32, z: f32, w: f32) -> Tuple {
         Tuple::tuple(x, y, z, w)
     }
 
-    fn point(x: f32, y: f32, z: f32) -> Tuple {
+    pub fn point(x: f32, y: f32, z: f32) -> Tuple {
         Tuple::point(x, y, z)
     }
 
-    fn vector(x: f32, y: f32, z: f32) -> Tuple {
+    pub fn vector(x: f32, y: f32, z: f32) -> Tuple {
         Tuple::vector(x, y, z)
     }
+}
+
+fn main() {
+    let t = ray::tuple(1.0, 1.0, 1.0, 1.0);
+
+    println!("Hello, world! {:?}", t);
+}
+
+#[cfg(test)]
+mod tests {
+//    use super::*;
+    use crate::ray::*;
 
     #[test]
     fn point_tuple() {
