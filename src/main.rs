@@ -1,5 +1,5 @@
 mod ray {
-    #[derive(PartialEq, Debug)]
+    #[derive(PartialEq, Debug, Copy, Clone)]
     pub struct Tuple {
         pub x: f32,
         pub y: f32,
@@ -144,10 +144,39 @@ mod ray {
     }
 }
 
-fn main() {
-    let t = ray::tuple(1.0, 1.0, 1.0, 1.0);
+#[derive(Debug, Copy, Clone)]
+struct Environment {
+    gravity: ray::Tuple,
+    wind: ray::Tuple
+}
 
-    println!("Hello, world! {:?}", t);
+#[derive(Debug, Copy, Clone)]
+struct Projectile {
+    position: ray::Tuple,
+    velocity: ray::Tuple
+}
+
+fn tick(env: Environment, projectile: Projectile) -> Projectile {
+    let position = projectile.position + projectile.velocity;
+    let velocity = projectile.velocity + env.gravity + env.wind;
+
+    Projectile { position, velocity }
+}
+
+fn main() {
+    let env = Environment {
+        gravity: ray::vector(-4.0, -4.0, -4.0),
+        wind: ray::vector(3.0, 3.0, 3.0)
+    };
+    let mut projectile = Projectile {
+        position: ray::point(0.0, 0.0, 0.0),
+        velocity: ray::vector(1.0, 1.0, 1.0)
+    };
+
+    while projectile.position.x >= 0.0 {
+        projectile = tick(env, projectile);
+        println!("Next position: {:?}", projectile);
+    }
 }
 
 #[cfg(test)]
