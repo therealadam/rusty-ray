@@ -7,6 +7,37 @@ mod ray {
         pub w: f32,
     }
 
+    pub type Color = Tuple;
+
+    impl Color {
+
+        pub fn red(&self) -> f32 {
+            self.x
+        }
+
+        pub fn green(&self) -> f32 {
+            self.y
+        }
+
+        pub fn blue(&self) -> f32 {
+            self.z
+        }
+
+    }
+
+    impl core::ops::Mul for Color {
+        type Output = Color;
+
+        // Hadamard/Schur product
+        fn mul(self, other: Color) -> Color {
+            color(
+                self.red() * other.red(),
+                self.green() * other.green(),
+                self.blue() * other.blue()
+            )
+        }
+    }
+
     impl Tuple {
 
         pub fn tuple(x: f32, y: f32, z: f32, w: f32) -> Tuple {
@@ -131,6 +162,7 @@ mod ray {
         }
     }
 
+    // TODO move to prelude
     pub fn tuple(x: f32, y: f32, z: f32, w: f32) -> Tuple {
         Tuple::tuple(x, y, z, w)
     }
@@ -142,6 +174,12 @@ mod ray {
     pub fn vector(x: f32, y: f32, z: f32) -> Tuple {
         Tuple::vector(x, y, z)
     }
+
+    pub fn color(r: f32, g: f32, b: f32) -> Color {
+        // such hax
+        point(r, g, b)
+    }
+
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -183,6 +221,7 @@ fn main() {
 mod tests {
 //    use super::*;
     use crate::ray::*;
+    use assert_approx_eq::assert_approx_eq;
 
     #[test]
     fn point_tuple() {
@@ -268,21 +307,21 @@ mod tests {
     fn multiply_tuple_by_scalar() {
         let a = tuple(1.0, -2.0, 3.0, -4.0);
 
-        assert_eq!(a * 3.5, tuple(3.5, -7.0, 10.5, -14.0));
+        assert_tuple_eq(a * 3.5, tuple(3.5, -7.0, 10.5, -14.0));
     }
     
     #[test]
     fn multiply_tuple_by_faction() {
         let a = tuple(1.0, -2.0, 3.0, -4.0);
 
-        assert_eq!(a * 0.5, tuple(0.5, -1.0, 1.5, -2.0));
+        assert_tuple_eq(a * 0.5, tuple(0.5, -1.0, 1.5, -2.0));
     }
     
     #[test]
     fn divide_tuple_by_scalar() {
         let a = tuple(1.0, -2.0, 3.0, -4.0);
 
-        assert_eq!(a / 2.0, tuple(0.5, -1.0, 1.5, -2.0));
+        assert_tuple_eq(a / 2.0, tuple(0.5, -1.0, 1.5, -2.0));
     }
 
     #[test]
@@ -307,9 +346,8 @@ mod tests {
         let norm = v2.normalize();
 
         assert_eq!(v1.normalize(), vector(1f32, 0f32, 0f32));
-        // XXX figure out how to write an assert +/- epsilon assertion
-        assert_eq!(norm, vector(0.26726124, 0.5345225, 0.8017837));
-        assert_eq!(norm.magnitude(), 0.99999994);
+        assert_tuple_eq(norm, vector(0.26726, 0.53452, 0.80178));
+        assert_approx_eq!(norm.magnitude(), 1.0);
     }
 
     #[test]
@@ -327,5 +365,62 @@ mod tests {
 
         assert_eq!(a.cross(&b), vector(-1.0, 2.0, -1.0));
         assert_eq!(b.cross(&a), vector(1.0, -2.0, 1.0));
+    }
+    
+    #[test]
+    fn colors_are_tuples() {
+        let c = color(-0.5, 0.4, 1.7);
+
+        assert_eq!(c.red(), -0.5);
+        assert_eq!(c.green(), 0.4);
+        assert_eq!(c.blue(), 1.7);
+    }
+    
+    #[test]
+    fn adding_colors() {
+        let c1 = color(0.9, 0.6, 0.75);
+        let c2 = color(0.7, 0.1, 0.25);
+
+        assert_color_eq(c1 + c2, color(1.6, 0.7, 1.0));
+    }
+
+    #[test]
+    fn subtracting_colors() {
+        let c1 = color(0.9, 0.6, 0.75);
+        let c2 = color(0.7, 0.1, 0.25);
+
+        assert_color_eq(c1 - c2, color(0.2, 0.5, 0.5));
+    }
+
+    #[test]
+    fn multiplying_color_by_scalar() {
+        let c = color(0.2, 0.3, 0.4);
+
+        assert_color_eq(c * 2.0, color(0.4, 0.6, 0.8))
+    }
+
+    #[test]
+    fn multiplying_colors() {
+        let c1 = color(1.0, 0.2, 0.4);
+        let c2 = color(0.9, 1.0, 0.1);
+
+        assert_color_eq(c1 * c2, color(0.9, 0.2, 0.04));
+    }
+
+    fn assert_tuple_eq(a: Tuple, b: Tuple) {
+        const epsilon: f32 = 0.00001;
+
+        assert_approx_eq!(a.x, b.x, epsilon);
+        assert_approx_eq!(a.y, b.y, epsilon);
+        assert_approx_eq!(a.z, b.z, epsilon);
+        assert_approx_eq!(a.w, b.w, epsilon);
+    }
+
+    fn assert_color_eq(a: Color, b: Color) {
+        const epsilon: f32 = 0.00001;
+
+        assert_approx_eq!(a.red(), b.red(), epsilon);
+        assert_approx_eq!(a.green(), b.green(), epsilon);
+        assert_approx_eq!(a.blue(), b.blue(), epsilon);
     }
 }
