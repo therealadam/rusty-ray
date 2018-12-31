@@ -24,6 +24,26 @@ impl Color {
         self.z
     }
 
+    fn ppm_str(&self) -> String {
+        let scaled_r = clamped(self.red(), 255.0);
+        let scaled_g = clamped(self.green(), 255.0);
+        let scaled_b = clamped(self.blue(), 255.0);
+
+        format!("{} {} {}", scaled_r, scaled_g, scaled_b)
+    }
+}
+
+// XXX put this some place sensible
+fn clamped(part: f32, scale: f32) -> u8 {
+    let n = if part > 1.0 {
+        1.0
+    } else if part < 0.0 {
+        0.0
+    } else {
+        part
+    };
+
+    (n * scale).round() as u8
 }
 
 impl core::ops::Mul for Color {
@@ -189,15 +209,34 @@ pub struct Canvas {
 
 impl Canvas {
     fn write_pixel(&mut self, x: usize, y: usize, color: Color) {
-        let offset = (x * self.width)+ y;
+        let offset = (self.width * y ) + x;
 
         self.pixels[offset] = color
     }
     
     fn pixel_at(&self, x: usize, y: usize) -> Color {
-        let offset = (x * self.width)+ y;
+        let offset = (self.width * y ) + x;
 
         self.pixels[offset]
+    }
+
+    fn to_ppm(&self) -> String {
+        let mut ppm = format!("P3\n{} {}\n255\n", self.width, self.height);
+
+        for row in 0..self.height {
+            let offset = row * self.width;
+            let n = self.width;
+            let pixels = &self.pixels[offset..offset + n];
+
+            for p in pixels {
+                ppm.push_str(&p.ppm_str());
+                ppm.push_str(" ");
+            }
+            ppm.push_str("\n");
+        }
+        ppm.push_str("\n");
+
+        ppm
     }
 }
 
@@ -406,7 +445,7 @@ mod tests {
         assert_eq!(c.height, 20);
         assert!(c.pixels.iter().all(|&pixel| pixel == color(0.0, 0.0, 0.0) ));
     }
-    
+
     #[test]
     fn writing_pixels_to_canvas() {
         let mut c = canvas(10, 20);
@@ -415,6 +454,36 @@ mod tests {
         c.write_pixel(2, 3, red);
 
         assert_eq!(c.pixel_at(2, 3), red);
+    }
+
+    #[test]
+    fn construct_ppm_header() {
+        let c = canvas(5, 3);
+        let ppm = c.to_ppm();
+        let header: Vec<&str> = ppm.lines().take(3).collect();
+
+        assert_eq!("P3", header[0]);
+        assert_eq!("5 3", header[1]);
+        assert_eq!("255", header[2]);
+    }
+
+    #[test]
+    fn construct_ppm_pixel_data() {
+        let mut c = canvas(5, 3);
+        let c1 = color(1.5, 0.0, 0.0);
+        let c2 = color(0.0, 0.5, 0.0);
+        let c3 = color(-0.5, 0.0, 1.0);
+
+        c.write_pixel(0, 0, c1);
+        c.write_pixel(2, 1, c2);
+        c.write_pixel(4, 2, c3);
+
+        let ppm = c.to_ppm();
+        let body: Vec<&str> = ppm.lines().skip(3).take(3).collect();
+
+        assert_eq!("255 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ", body[0]);
+        assert_eq!("0 0 0 0 0 0 0 128 0 0 0 0 0 0 0 ", body[1]);
+        assert_eq!("0 0 0 0 0 0 0 0 0 0 0 0 0 0 255 ", body[2]);
     }
 
     fn assert_tuple_eq(a: Tuple, b: Tuple) {
