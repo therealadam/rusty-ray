@@ -221,22 +221,44 @@ impl Canvas {
     }
 
     fn to_ppm(&self) -> String {
-        let mut ppm = format!("P3\n{} {}\n255\n", self.width, self.height);
+        let mut body = String::new();
+        let header = &format!("P3\n{} {}\n255\n", self.width, self.height);
+        body.push_str(header);
 
-        for row in 0..self.height {
-            let offset = row * self.width;
+        for x in 0..self.height {
+            let offset = x * self.width;
             let n = self.width;
-            let pixels = &self.pixels[offset..offset + n];
 
-            for p in pixels {
-                ppm.push_str(&p.ppm_str());
-                ppm.push_str(" ");
+            let mut row = String::new();
+            for p in &self.pixels[offset..offset + n] {
+                row.push_str(&p.ppm_str());
+                row.push_str(" ");
             }
-            ppm.push_str("\n");
-        }
-        ppm.push_str("\n");
+            row.push_str("\n");
 
-        ppm
+            let boundary = 70;
+            if row.len() > boundary {
+                let sub = &row[0..70];
+
+                if let Some(idx) = sub.rfind(" ") {
+                    row.insert_str(idx, "\n");
+                } else {
+                    panic!("That's some weird-ass data");
+                }
+            }
+
+            body.push_str(&row);
+        }
+
+        let trimmed: Vec<&str> = body
+            .lines()
+            .map( |l| l.trim() )
+            .collect();
+
+        let mut result = trimmed.join("\n");
+        result.push_str("\n");
+
+        return result
     }
 }
 
@@ -481,9 +503,27 @@ mod tests {
         let ppm = c.to_ppm();
         let body: Vec<&str> = ppm.lines().skip(3).take(3).collect();
 
-        assert_eq!("255 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ", body[0]);
-        assert_eq!("0 0 0 0 0 0 0 128 0 0 0 0 0 0 0 ", body[1]);
-        assert_eq!("0 0 0 0 0 0 0 0 0 0 0 0 0 0 255 ", body[2]);
+        assert_eq!("255 0 0 0 0 0 0 0 0 0 0 0 0 0 0", body[0]);
+        assert_eq!("0 0 0 0 0 0 0 128 0 0 0 0 0 0 0", body[1]);
+        assert_eq!("0 0 0 0 0 0 0 0 0 0 0 0 0 0 255", body[2]);
+    }
+    
+    #[test]
+    fn split_long_lines_in_ppm_files() {
+        let mut c = canvas(10, 2);
+        let color = color(1.0, 0.8, 0.6);
+        for y in 0..c.height {
+            for x in 0..c.width {
+                c.write_pixel(x, y, color)
+            }
+        }
+        let ppm = c.to_ppm();
+        let body: Vec<&str> = ppm.lines().skip(3).take(4).collect();
+
+        assert_eq!("255 204 153 255 204 153 255 204 153 255 204 153 255 204 153 255 204", body[0]);
+        assert_eq!("153 255 204 153 255 204 153 255 204 153 255 204 153", body[1]);
+        assert_eq!("255 204 153 255 204 153 255 204 153 255 204 153 255 204 153 255 204", body[2]);
+        assert_eq!("153 255 204 153 255 204 153 255 204 153 255 204 153", body[3]);
     }
 
     fn assert_tuple_eq(a: Tuple, b: Tuple) {
