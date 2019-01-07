@@ -526,6 +526,14 @@ mod tests {
         assert_eq!("153 255 204 153 255 204 153 255 204 153 255 204 153", body[3]);
     }
 
+    #[test]
+    fn ppm_files_terminate_with_newline() {
+        let c = canvas(5, 3);
+        let ppm = c.to_ppm();
+
+        assert!(ppm.ends_with("\n"));
+    }
+
     fn assert_tuple_eq(a: Tuple, b: Tuple) {
         const EPSILON: f32 = 0.00001;
 
