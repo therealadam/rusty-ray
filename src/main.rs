@@ -1,6 +1,4 @@
-mod ray;
-
-use crate::ray::*;
+use rusty_ray::{Tuple, vector, point};
 
 #[derive(Debug, Copy, Clone)]
 struct Environment {

@@ -1,191 +1,15 @@
 #![allow(dead_code)]
 
-#[derive(PartialEq, Debug, Copy, Clone)]
-pub struct Tuple {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
-    pub w: f32,
-}
+mod tuple;
+mod color;
+mod canvas;
 
-pub type Color = Tuple;
+pub use crate::tuple::Tuple;
+use crate::color::Color;
+use crate::canvas::Canvas;
 
-impl Color {
-
-    pub fn red(&self) -> f32 {
-        self.x
-    }
-
-    pub fn green(&self) -> f32 {
-        self.y
-    }
-
-    pub fn blue(&self) -> f32 {
-        self.z
-    }
-
-    fn ppm_str(&self) -> String {
-        let scaled_r = clamped(self.red(), 255.0);
-        let scaled_g = clamped(self.green(), 255.0);
-        let scaled_b = clamped(self.blue(), 255.0);
-
-        format!("{} {} {}", scaled_r, scaled_g, scaled_b)
-    }
-}
-
-// XXX put this some place sensible
-fn clamped(part: f32, scale: f32) -> u8 {
-    let n = if part > 1.0 {
-        1.0
-    } else if part < 0.0 {
-        0.0
-    } else {
-        part
-    };
-
-    (n * scale).round() as u8
-}
-
-impl core::ops::Mul for Color {
-    type Output = Color;
-
-    // Hadamard/Schur product
-    fn mul(self, other: Color) -> Color {
-        color(
-            self.red() * other.red(),
-            self.green() * other.green(),
-            self.blue() * other.blue()
-        )
-    }
-}
-
-impl Tuple {
-
-    pub fn tuple(x: f32, y: f32, z: f32, w: f32) -> Tuple {
-        Tuple {
-            x: x,
-            y: y,
-            z: z,
-            w: w,
-        }
-    }
-
-    pub fn point(x: f32, y: f32, z: f32) -> Tuple {
-        Tuple::tuple(x, y, z, 1.0)
-    }
-
-    pub fn vector(x: f32, y: f32, z: f32) -> Tuple {
-        Tuple::tuple(x, y, z, 0.0)
-    }
-
-    pub fn is_point(&self) -> bool {
-        self.w == 1.0
-    }
-
-    pub fn is_vector(&self) -> bool {
-        self.w != 1.0
-    }
-
-    pub fn magnitude(&self) -> f32 {
-        (
-            self.x.powi(2) +
-                self.y.powi(2) +
-                self.z.powi(2) +
-                self.w.powi(2)
-        ).sqrt()
-    }
-
-    pub fn normalize(&self) -> Tuple {
-        tuple(
-            self.x / self.magnitude(),
-            self.y / self.magnitude(),
-            self.z / self.magnitude(),
-            self.w / self.magnitude(),
-        )
-    }
-
-    pub fn dot(&self, other: Tuple) -> f32 {
-        self.x * other.x +
-            self.y * other.y +
-            self.z * other.z +
-            self.w * other.w
-    }
-
-    pub fn cross(&self, other: &Tuple) -> Tuple {
-        vector(
-            self.y * other.z - self.z * other.y,
-            self.z * other.x - self.x * other.z,
-            self.x * other.y - self.y * other.x
-        )
-    }
-
-}
-
-impl core::ops::Add for Tuple {
-    type Output = Tuple;
-
-    fn add(self, other: Tuple) -> Tuple {
-        Tuple {
-            x: self.x + other.x,
-            y: self.y + other.y,
-            z: self.z + other.z,
-            w: self.w.max(other.z)
-        }
-    }
-}
-
-impl core::ops::Sub for Tuple {
-    type Output = Tuple;
-
-    fn sub(self, other: Tuple) -> Tuple {
-        Tuple {
-            x: self.x - other.x,
-            y: self.y - other.y,
-            z: self.z - other.z,
-            w: (self.w - other.w).max(0.0)
-        }
-    }
-}
-
-impl core::ops::Neg for Tuple {
-    type Output = Tuple;
-
-    fn neg(self) -> Tuple {
-        let zero = tuple(0.0, 0.0, 0.0, 0.0);
-
-        zero - self
-    }
-}
-
-impl core::ops::Mul<f32> for Tuple {
-    type Output = Tuple;
-
-    fn mul(self, other: f32) -> Tuple {
-        Tuple {
-            x: self.x * other,
-            y: self.y * other,
-            z: self.z * other,
-            w: self.w * other,
-        }
-    }
-}
-
-impl core::ops::Div<f32> for Tuple {
-    type Output = Tuple;
-
-    fn div(self, other: f32) -> Tuple {
-        Tuple {
-            x: self.x / other,
-            y: self.y / other,
-            z: self.z / other,
-            w: self.w / other,
-        }
-    }
-}
-
-// TODO move to prelude
 pub fn tuple(x: f32, y: f32, z: f32, w: f32) -> Tuple {
-    Tuple::tuple(x, y, z, w)
+    Tuple::new(x, y, z, w)
 }
 
 pub fn point(x: f32, y: f32, z: f32) -> Tuple {
@@ -197,83 +21,22 @@ pub fn vector(x: f32, y: f32, z: f32) -> Tuple {
 }
 
 pub fn color(r: f32, g: f32, b: f32) -> Color {
-    // such hax
+    // HAX!
     point(r, g, b)
-}
-
-pub struct Canvas {
-    pub width: usize,
-    pub height: usize,
-    pub pixels: Vec<Color> // is a Vec<Vec<Color>> more SIMD-able?
-}
-
-impl Canvas {
-    fn write_pixel(&mut self, x: usize, y: usize, color: Color) {
-        let offset = (self.width * y ) + x;
-
-        self.pixels[offset] = color
-    }
-    
-    fn pixel_at(&self, x: usize, y: usize) -> Color {
-        let offset = (self.width * y ) + x;
-
-        self.pixels[offset]
-    }
-
-    fn to_ppm(&self) -> String {
-        let mut body = String::new();
-        let header = &format!("P3\n{} {}\n255\n", self.width, self.height);
-        body.push_str(header);
-
-        for x in 0..self.height {
-            let offset = x * self.width;
-            let n = self.width;
-
-            let mut row = String::new();
-            for p in &self.pixels[offset..offset + n] {
-                row.push_str(&p.ppm_str());
-                row.push_str(" ");
-            }
-            row.push_str("\n");
-
-            let boundary = 70;
-            if row.len() > boundary {
-                let sub = &row[0..70];
-
-                if let Some(idx) = sub.rfind(" ") {
-                    row.insert_str(idx, "\n");
-                } else {
-                    panic!("That's some weird-ass data");
-                }
-            }
-
-            body.push_str(&row);
-        }
-
-        let trimmed: Vec<&str> = body
-            .lines()
-            .map( |l| l.trim() )
-            .collect();
-
-        let mut result = trimmed.join("\n");
-        result.push_str("\n");
-
-        return result
-    }
 }
 
 pub fn canvas(width: usize, height: usize) -> Canvas {
     let pixels = vec!(color(0.0, 0.0, 0.0); width * height);
 
-    Canvas { width, height, pixels }
+    Canvas::new(width, height, pixels)
 }
-
 
 #[cfg(test)]
 mod tests {
-    //    use super::*;
-    use crate::ray::*;
     use assert_approx_eq::assert_approx_eq;
+    use crate::tuple::*;
+    use crate::color::*;
+    use super::{ tuple, point, vector, color, canvas };
 
     #[test]
     fn point_tuple() {
