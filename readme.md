@@ -1,5 +1,3 @@
-# Rusty Ray
-
 Wherein I get dirty with Rust and Jamis Buck's [The Ray Tracer Challenge](https://pragprog.com/book/jbtracer/the-ray-tracer-challenge). I am probaby writing some very substandard Rust here, so bear with me.
 
 ## Front matter
