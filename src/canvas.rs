@@ -12,6 +12,11 @@ impl Canvas {
     }
 
     pub fn write_pixel(&mut self, x: usize, y: usize, color: Color) {
+        assert!(
+            x <= self.width && y <= self.height,
+            "Attempt to write out of bounds: {} {}",
+            x, y
+        );
         let offset = (self.width * y ) + x;
 
         self.pixels[offset] = color
